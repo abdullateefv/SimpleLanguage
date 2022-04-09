@@ -92,6 +92,9 @@ bool DeclBlock(istream& in, int& line) {
             break;
         }
         t = Parser::GetNextToken(in, line);
+        if (t == IDENT) {
+            Parser::PushBackToken(t);
+        }
     }
 
     return status;
@@ -102,10 +105,12 @@ bool DeclStmt(istream& in, int& line) {
     while (t != COLON) {
         if (t != COMMA) {
             identifierList.push_back(t.GetLexeme());
-            cout << t.GetLexeme() << endl;
         }
         t = Parser::GetNextToken(in,line);
     }
+
+    //Read in type
+    t = Parser::GetNextToken(in,line);
 
     if (t != INTEGER && t!= REAL && t != STRING) {
         ParseError(line, "Incorrect Declaration Type.");
@@ -113,7 +118,7 @@ bool DeclStmt(istream& in, int& line) {
     }
 
     //Read in semicolon at the end of stmt
-    Parser::GetNextToken(in,line);
+    t = Parser::GetNextToken(in,line);
     return true;
 }
 bool ProgBody(istream& in, int& line) {
