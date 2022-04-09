@@ -6,29 +6,30 @@
 
 #include "parse.h"
 #include <vector>
+#include <algorithm>
 
 map<string, bool> defVar;
 map<string, Token> SymTable;
 
 namespace Parser {
-	bool pushed_back = false;
-	LexItem	pushed_token;
+    bool pushed_back = false;
+    LexItem	pushed_token;
 
-	static LexItem GetNextToken(istream& in, int& line) {
-		if( pushed_back ) {
-			pushed_back = false;
-			return pushed_token;
-		}
-		return getNextToken(in, line);
-	}
+    static LexItem GetNextToken(istream& in, int& line) {
+        if( pushed_back ) {
+            pushed_back = false;
+            return pushed_token;
+        }
+        return getNextToken(in, line);
+    }
 
-	static void PushBackToken(LexItem & t) {
-		if( pushed_back ) {
-			abort();
-		}
-		pushed_back = true;
-		pushed_token = t;	
-	}
+    static void PushBackToken(LexItem & t) {
+        if( pushed_back ) {
+            abort();
+        }
+        pushed_back = true;
+        pushed_token = t;
+    }
 
 }
 
@@ -41,8 +42,8 @@ int ErrCount()
 
 void ParseError(int line, string msg)
 {
-	++error_count;
-	cout << line << ": " << msg << endl;
+    ++error_count;
+    cout << line << ": " << msg << endl;
 }
 
 bool Prog(istream& in, int& line) {
@@ -99,12 +100,27 @@ bool DeclBlock(istream& in, int& line) {
 
     return status;
 }
+
 bool DeclStmt(istream& in, int& line) {
-    vector<string> identifierList;
     LexItem t = Parser::GetNextToken(in,line);
+
     while (t != COLON) {
         if (t != COMMA) {
-            identifierList.push_back(t.GetLexeme());
+            if (defVar.count(t.GetLexeme()) >= 1) {
+                ParseError(line, "Variable Redefinition");
+                ParseError(line, "Incorrect variable in Declaration Statement.");
+                return false;
+            } else {
+                defVar.insert({t.GetLexeme(), true});
+                t = Parser::GetNextToken(in,line);
+                if (t != COMMA && t != COLON) {
+                    ParseError(line, "Unrecognized Input Pattern");
+                    cout << '(' << t.GetLexeme() << ')' << endl;
+                    ParseError(line, "Incorrect variable in Declaration Statement.");
+                    return false;
+                }
+                Parser::PushBackToken(t);
+            }
         }
         t = Parser::GetNextToken(in,line);
     }
@@ -121,6 +137,7 @@ bool DeclStmt(istream& in, int& line) {
     t = Parser::GetNextToken(in,line);
     return true;
 }
+
 bool ProgBody(istream& in, int& line) {
     return false;
 }
