@@ -36,6 +36,7 @@ namespace Parser {
 static int error_count = 0;
 
 static bool semiMissingFlag = false;
+static bool parError = false;
 
 int ErrCount()
 {
@@ -82,6 +83,10 @@ bool Prog(istream& in, int& line) {
             ParseError(line - 1, "Incorrect Program Body.");
             return false;
         }
+        if (parError) {
+            ParseError(line -1, "Incorrect Program Body.");
+            return false;
+        }
         ParseError(line, "Incorrect Program Body.");
         return false;
     }
@@ -126,7 +131,7 @@ bool DeclStmt(istream& in, int& line) {
                 ParseError(line, "Incorrect variable in Declaration Statement.");
                 return false;
             } else {
-                defVar.insert({t.GetLexeme(), true});
+                defVar.insert({t.GetLexeme(), false});
                 t = Parser::GetNextToken(in,line);
                 if (t != COMMA && t != COLON) {
                     ParseError(line, "Unrecognized Input Pattern");
@@ -162,6 +167,10 @@ bool ProgBody(istream& in, int& line) {
         //Read in statement
         status = Stmt(in,line);
         if (!status) {
+            if (parError) {
+                ParseError(line -1, "Syntactic error in Declaration Block.");
+                return false;
+            }
             ParseError(line, "Syntactic error in Program Body.");
             return false;
         }
@@ -277,7 +286,15 @@ bool IfStmt(istream& in, int& line) {
 
     //Read in the statement
     status = Stmt(in, line);
-    
+    if (!status) {
+        if (parError) {
+            ParseError(line - 1, "Missing Statement for If-Stmt Then-Part");
+            return false;
+        }
+        ParseError(line, "Missing Statement for If-Stmt Then-Part");
+        status = false;
+    }
+
     //Read in the else
     t = Parser::GetNextToken(in, line);
     if(t == ELSE) {
@@ -290,7 +307,38 @@ bool IfStmt(istream& in, int& line) {
 }
 
 bool ForStmt(istream& in, int& line) {
-    return false;
+    bool status = false;
+
+    //Read in var
+    status = Var(in,line);
+
+    //Read in assop
+    LexItem t = Parser::GetNextToken(in,line);
+
+    //Read in iconst
+    t = Parser::GetNextToken(in,line);
+
+    //Read in TO | DOWNTO
+    t = Parser::GetNextToken(in,line);
+    if (t != TO && t!= DOWNTO) {
+        ParseError(line, "For Statement Syntax Error");
+        return false;
+    }
+
+    //Read in iconst
+    t = Parser::GetNextToken(in,line);
+    if (t != ICONST) {
+        ParseError(line, "Missing Termination Value in For Statement.");
+        return false;
+    }
+
+    //Read in Do
+    t = Parser::GetNextToken(in,line);
+
+    //Read in stmt
+    status = Stmt(in,line);
+
+    return status;
 }
 
 bool AssignStmt(istream& in, int& line) {
@@ -312,7 +360,11 @@ bool AssignStmt(istream& in, int& line) {
     //Read in the Assignment Expression
     status = Expr(in, line);
     if (!status) {
-        ParseError(line, "Problem reading in assignment expression");
+        if (parError) {
+            ParseError(line - 1, "Missing Expression in Assignment Statment");
+            return false;
+        }
+        ParseError(line, "Missing Expression in Assignment Statment");
         return false;
     }
     return status;
@@ -326,7 +378,7 @@ bool Var(istream& in, int& line) {
         return false;
     }
 
-    if (!defVar[t.GetLexeme()]) {
+    if (defVar.count(t.GetLexeme()) == 0) {
         ParseError(line, "Undeclared Variable");
         return false;
     }
@@ -440,7 +492,8 @@ bool Factor(istream& in, int& line, int sign) {
 
         t = Parser::GetNextToken(in,line);
         if (t != RPAREN) {
-            ParseError(line, "Missing RParen");
+            ParseError(line, "Missing ) after expression");
+            parError = true;
             return false;
         }
     } else {

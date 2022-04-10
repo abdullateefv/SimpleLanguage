@@ -1,19 +1,22 @@
 PROGRAM circle;
+	(*Syntax Error in For Statement*)
 VAR
-	(*Missing left Parenthesis in WriteLn Statement*)
 	(*Variable declarations*)
 	r, a, p, b : REAL;
-	i, j : INTEGER;
+	i, j, sum : INTEGER;
 BEGIN
 	r := 8;
 	p := 0;
 	a := 0;
-
+	sum := 0;
 	j := -1;
 	IF ( r > 5) THEN
-	  a := (3.14) * r * r;
-	IF (a < 100) THEN
-	    p := 2 * 3.14 * b;
+	  	a := (3.14) + j * r
+	ELSE
+		p := 0;
+
+	FOR i := 4 down to 10 do sum := sum + i;
+
 	(*Display the results*)
 	WRITELN  ('The output results are ' , r, p, b);
 END
