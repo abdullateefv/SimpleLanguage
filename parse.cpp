@@ -218,7 +218,6 @@ bool Stmt(istream& in, int& line) {
     return status;
 }//End of Stmt
 
-
 //WriteStmt:= wi, ExpreList
 bool WriteLnStmt(istream& in, int& line) {
     LexItem t;
@@ -250,43 +249,50 @@ bool WriteLnStmt(istream& in, int& line) {
 }
 
 bool IfStmt(istream& in, int& line) {
-    bool result = true;
-    LexItem t = Parser::GetNextToken(in, line);
+    bool status = true;
 
+    //Read in LPAREN
+    LexItem t = Parser::GetNextToken(in, line);
     if(t != LPAREN) {
         ParseError(line, "Missing LPAREN.");
-        result = false;
+        status = false;
     }
-    if(!LogicExpr(in, line)) {
-        result = false;
-    }
+
+    //Read in the logical expression
+    status = LogicExpr(in, line);
+
+    //Read in the RPAREN
     t = Parser::GetNextToken(in, line);
     if(t != RPAREN) {
         ParseError(line, "Missing RPAREN.");
-        result = false;
+        status = false;
     }
+
+    //Read in the THEN
     t = Parser::GetNextToken(in, line);
     if(t != THEN) {
         ParseError(line, "Missing THEN.");
-        result = false;
+        status = false;
     }
-    if(!Stmt(in, line)) {
-        result = false;
-    }
+
+    //Read in the statement
+    status = Stmt(in, line);
+    
+    //Read in the else
     t = Parser::GetNextToken(in, line);
     if(t == ELSE) {
-        if(!Stmt(in, line)) {
-            result = false;
-        }
-    }
-    else {
+        status = Stmt(in, line);
+    } else {
         Parser::PushBackToken(t);
     }
-    return result;
+
+    return status;
 }
+
 bool ForStmt(istream& in, int& line) {
     return false;
 }
+
 bool AssignStmt(istream& in, int& line) {
     bool status = false;
     //Read in the VAR/IDENT
@@ -385,6 +391,7 @@ bool Expr(istream& in, int& line) {
         return status;
     }
 }
+
 bool Term(istream& in, int& line) {
     bool status = false;
     status = SFactor(in, line);
@@ -398,6 +405,7 @@ bool Term(istream& in, int& line) {
     }
     return false;
 }
+
 bool SFactor(istream& in, int& line) {
     bool status = false;
     LexItem t = Parser::GetNextToken(in, line);
