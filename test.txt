@@ -1,6 +1,6 @@
 PROGRAM circle;
-	(*Undeclared Variable*)
 VAR
+	(*Incorrect Operator symbol*)
 	(*Variable declarations*)
 	r, a, p, b : REAL;
 	i, j : INTEGER;
@@ -9,11 +9,11 @@ BEGIN
 	p := 0;
 	a := 0;
 
-	k := -1;
+	j := -1;
 	IF ( r > 5) THEN
-	  a := (3.14) + k * r;
+	  a := (3.14) * r * r;
 	IF (a < 100) THEN
-	    p := 2 * 3.14 * b;
+	    p := 2 $ 3.14 * b;
 	(*Display the results*)
-	WRITELN  ('The output results are ' , r, p, b);
+	WRITELN ( 'The output results are ' , r p, b);
 END

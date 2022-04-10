@@ -451,6 +451,10 @@ bool Term(istream& in, int& line) {
     LexItem t = Parser::GetNextToken(in,line);
     if (t == MULT || t == DIV) {
         return Term(in,line);
+    } else if (t == ERR) {
+        ParseError(line, "Unrecognized Input Pattern");
+        cout << '(' << t.GetLexeme() << ')' << endl;
+        return false;
     } else {
         Parser::PushBackToken(t);
         return status;
@@ -461,6 +465,7 @@ bool Term(istream& in, int& line) {
 bool SFactor(istream& in, int& line) {
     bool status = false;
     LexItem t = Parser::GetNextToken(in, line);
+
     if (t == MINUS) {
         return Factor(in, line, 0);
     } else if (t == PLUS) {
