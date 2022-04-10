@@ -13,8 +13,6 @@ using namespace std;
 
 #include "lex.h"
 
-
-
 extern bool Prog(istream& in, int& line);//done
 extern bool DeclBlock(istream& in, int& line);//done
 extern bool DeclStmt(istream& in, int& line);//done

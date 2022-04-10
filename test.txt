@@ -1,12 +1,12 @@
 PROGRAM circle;
 VAR
-	(*Variable redefinition*0
+	(*Missing Semicolon*)
 	(*Variable declarations*)
 	r, a, p, b : REAL;
-	i, j, r : INTEGER;
+	i, j : INTEGER;
 BEGIN
 	r := 8;
-	p := 0;
+	p := 0
 	a := 0;
 
 	j := -1;

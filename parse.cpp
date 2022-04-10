@@ -35,6 +35,8 @@ namespace Parser {
 
 static int error_count = 0;
 
+static bool semiMissingFlag = false;
+
 int ErrCount()
 {
     return error_count;
@@ -69,9 +71,20 @@ bool Prog(istream& in, int& line) {
 
     //Read in Declaration Block
     status = DeclBlock(in,line);
-    if (!status)
+    if (!status) {
         ParseError(line, "Incorrect Declaration Section.");
-
+        return false;
+    }
+    //Read in Program Body
+    status = ProgBody(in,line);
+    if (!status) {
+        if (semiMissingFlag) {
+            ParseError(line - 1, "Incorrect Program Body.");
+            return false;
+        }
+        ParseError(line, "Incorrect Program Body.");
+        return false;
+    }
     return status;
 }
 
@@ -90,12 +103,14 @@ bool DeclBlock(istream& in, int& line) {
         status = DeclStmt(in, line);
         if (!status) {
             ParseError(line, "Syntactic error in Declaration Block.");
-            break;
+            return false;
         }
+
         t = Parser::GetNextToken(in, line);
         if (t == IDENT) {
             Parser::PushBackToken(t);
         }
+
     }
 
     return status;
@@ -139,13 +154,42 @@ bool DeclStmt(istream& in, int& line) {
 }
 
 bool ProgBody(istream& in, int& line) {
-    return false;
+    bool status;
+    LexItem t = Parser::GetNextToken(in,line);
+    while (t != END && t != DONE) {
+        Parser::PushBackToken(t);
+
+        //Read in statement
+        status = Stmt(in,line);
+        if (!status) {
+            ParseError(line, "Syntactic error in Program Body.");
+            return false;
+        }
+
+        //Read in semicolon
+        t = Parser::GetNextToken(in,line);
+        if (t != SEMICOL) {
+            ParseError(line - 1, "Missing semicolon in Statement.");
+            semiMissingFlag = true;
+            return false;
+        }
+        t = Parser::GetNextToken(in,line);
+    }
+
+    if (t == END) {
+        return true;
+    } else if (t == DONE) {
+        ParseError(line, "Syntactic error in Program Body.");
+        return false;
+    }
+
+    return status;
 }
+
 //Stmt is either a WriteLnStmt, ForepeatStmt, IfStmt, or AssigStmt
 //Stmt = AssigStmt | IfStmt | WriteStmt | ForStmt
 bool Stmt(istream& in, int& line) {
-    bool status;
-    //cout << "in ContrlStmt" << endl;
+    bool status = true;
     LexItem t = Parser::GetNextToken(in, line);
 
     switch( t.GetToken() ) {
@@ -162,12 +206,10 @@ bool Stmt(istream& in, int& line) {
         case IDENT:
             Parser::PushBackToken(t);
             status = AssignStmt(in, line);
-
             break;
 
         case FOR:
             status = ForStmt(in, line);
-
             break;
 
 
@@ -175,9 +217,10 @@ bool Stmt(istream& in, int& line) {
             Parser::PushBackToken(t);
             return false;
     }
-
     return status;
 }//End of Stmt
+
+
 //WriteStmt:= wi, ExpreList
 bool WriteLnStmt(istream& in, int& line) {
     LexItem t;
@@ -214,10 +257,43 @@ bool ForStmt(istream& in, int& line) {
     return false;
 }
 bool AssignStmt(istream& in, int& line) {
-    return false;
+    bool status = false;
+    //Read in the VAR/IDENT
+    status = Var(in,line);
+    if (!status) {
+        ParseError(line,"Missing Left-Hand Side Variable in Assignment statement");
+        return false;
+    }
+
+    //Read in the ASSOP
+    LexItem t = Parser::GetNextToken(in,line);
+    if (t != ASSOP) {
+        ParseError(line, "Missing Assignment Operator");
+        return false;
+    }
+
+    //Read in the Assignment Expression
+    status = Expr(in, line);
+    if (!status) {
+        ParseError(line, "Problem reading in assignment expression");
+        return false;
+    }
+    return status;
 }
 bool Var(istream& in, int& line) {
-    return false;
+    //Read in the variable
+    LexItem t = Parser::GetNextToken(in,line);
+    if (t != IDENT) {
+        ParseError(line, "Var() did not read in an IDENT");
+        return false;
+    }
+
+    if (!defVar[t.GetLexeme()]) {
+        ParseError(line, "Undeclared Variable");
+        return false;
+    }
+
+    return true;
 }
 //ExprList:= Expr {,Expr}
 bool ExprList(istream& in, int& line) {
@@ -247,22 +323,75 @@ bool ExprList(istream& in, int& line) {
     }
     return status;
 }
+
 bool LogicExpr(istream& in, int& line) {
     return false;
 }
 bool Expr(istream& in, int& line) {
-    return false;
+    bool status = false;
+    status = Term(in, line);
+
+    LexItem t = Parser::GetNextToken(in,line);
+    if (t == PLUS || t == MINUS) {
+        return Expr(in,line);
+    } else {
+        Parser::PushBackToken(t);
+        return status;
+    }
 }
 bool Term(istream& in, int& line) {
+    bool status = false;
+    status = SFactor(in, line);
+
+    LexItem t = Parser::GetNextToken(in,line);
+    if (t == MULT || t == DIV) {
+        return Term(in,line);
+    } else {
+        Parser::PushBackToken(t);
+        return status;
+    }
     return false;
 }
 bool SFactor(istream& in, int& line) {
-    return false;
+    bool status = false;
+    LexItem t = Parser::GetNextToken(in, line);
+    if (t == MINUS) {
+        return Factor(in, line, 0);
+    } else if (t == PLUS) {
+        return Factor(in,line, 1);
+    } else {
+        Parser::PushBackToken(t);
+        return Factor(in,line, 1);
+    }
+    return status;
 }
+
 bool Factor(istream& in, int& line, int sign) {
+    LexItem t = Parser::GetNextToken(in,line);
+
+    if (t == IDENT) {
+        return true;
+    } else if (t == ICONST) {
+        return true;
+    } else if (t == RCONST) {
+        return true;
+    } else if (t == SCONST) {
+        return true;
+    } else if (t == LPAREN) {
+        bool status = Expr(in,line);
+        if (!status) {
+            ParseError(line, "Error in Nested Expression");
+            return false;
+        }
+
+        t = Parser::GetNextToken(in,line);
+        if (t != RPAREN) {
+            ParseError(line, "Missing RParen");
+            return false;
+        }
+    } else {
+        ParseError(line, "Error in factor statement");
+        return false;
+    }
     return false;
 }
-
-
-
-
