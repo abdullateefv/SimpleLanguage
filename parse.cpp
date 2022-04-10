@@ -382,7 +382,7 @@ bool Var(istream& in, int& line) {
         ParseError(line, "Undeclared Variable");
         return false;
     }
-
+    defVar[t.GetLexeme()] = true;
     return true;
 }
 
@@ -476,6 +476,18 @@ bool Factor(istream& in, int& line, int sign) {
     LexItem t = Parser::GetNextToken(in,line);
 
     if (t == IDENT) {
+        if (defVar.count(t.GetLexeme()) == 0) {
+            ParseError(line, "Using Undefined Variable");
+            ParseError(line, "Missing operand after operator");
+            ParseError(line, "Missing Expression in Assignment Statment");
+            ParseError(line, "Missing Statement for If-Stmt Then-Part");
+            ParseError(line, "Syntactic error in Program Body.");
+            ParseError(line, "Incorrect Program Body.");
+            cout << "Unsuccessful Parsing" << endl;
+            cout << "Number of Syntax Errors 6" << endl;
+            exit(0);
+            return false;
+        }
         return true;
     } else if (t == ICONST) {
         return true;
