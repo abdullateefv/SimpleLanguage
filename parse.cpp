@@ -193,7 +193,6 @@ bool Stmt(istream& in, int& line) {
     LexItem t = Parser::GetNextToken(in, line);
 
     switch( t.GetToken() ) {
-
         case WRITELN:
             status = WriteLnStmt(in, line);
             //cout << "After WriteStmet status: " << (status? true:false) <<endl;
@@ -211,7 +210,6 @@ bool Stmt(istream& in, int& line) {
         case FOR:
             status = ForStmt(in, line);
             break;
-
 
         default:
             Parser::PushBackToken(t);
@@ -250,8 +248,41 @@ bool WriteLnStmt(istream& in, int& line) {
 
     return ex;
 }
+
 bool IfStmt(istream& in, int& line) {
-    return false;
+    bool result = true;
+    LexItem t = Parser::GetNextToken(in, line);
+
+    if(t != LPAREN) {
+        ParseError(line, "Missing LPAREN.");
+        result = false;
+    }
+    if(!LogicExpr(in, line)) {
+        result = false;
+    }
+    t = Parser::GetNextToken(in, line);
+    if(t != RPAREN) {
+        ParseError(line, "Missing RPAREN.");
+        result = false;
+    }
+    t = Parser::GetNextToken(in, line);
+    if(t != THEN) {
+        ParseError(line, "Missing THEN.");
+        result = false;
+    }
+    if(!Stmt(in, line)) {
+        result = false;
+    }
+    t = Parser::GetNextToken(in, line);
+    if(t == ELSE) {
+        if(!Stmt(in, line)) {
+            result = false;
+        }
+    }
+    else {
+        Parser::PushBackToken(t);
+    }
+    return result;
 }
 bool ForStmt(istream& in, int& line) {
     return false;
@@ -280,6 +311,7 @@ bool AssignStmt(istream& in, int& line) {
     }
     return status;
 }
+
 bool Var(istream& in, int& line) {
     //Read in the variable
     LexItem t = Parser::GetNextToken(in,line);
@@ -295,6 +327,7 @@ bool Var(istream& in, int& line) {
 
     return true;
 }
+
 //ExprList:= Expr {,Expr}
 bool ExprList(istream& in, int& line) {
     bool status = false;
@@ -325,8 +358,21 @@ bool ExprList(istream& in, int& line) {
 }
 
 bool LogicExpr(istream& in, int& line) {
-    return false;
+    bool status = false;
+    status = Expr(in,line);
+
+    LexItem t = Parser::GetNextToken(in,line);
+
+    if (t != EQUAL && t != GTHAN && t != LTHAN) {
+        ParseError(line, "Missing expression after relational operator");
+        return false;
+    }
+
+    status = Expr(in,line);
+
+    return status;
 }
+
 bool Expr(istream& in, int& line) {
     bool status = false;
     status = Term(in, line);
